@@ -33,8 +33,17 @@ test_images = pipe.collectImages(test_image_dir)
 
 #import sys
 #sys.exit()
+import os
+if os.path.exists("Coeff.npy"):
+    print("Using existing Coefficients ")
+    coeff = np.load('Coeff.npy') 
+    mat = np.load('Mat.npy')
+else:
+    print("Calculaitng new distortion Coefficients ")
+    mat,coeff = pipe.cameraCalibMatrices(images)
+    np.save('Coeff.npy',coeff)
+    np.save('Mat.npy',mat)
 
-mat,coeff = pipe.cameraCalibMatrices(images)
 
 output = []
 #test_image = images[10]
