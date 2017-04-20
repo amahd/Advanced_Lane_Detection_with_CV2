@@ -36,10 +36,10 @@ test_images = pipe.collectImages(test_image_dir)
 
 mat,coeff = pipe.cameraCalibMatrices(images)
 
-
+output = []
 #test_image = images[10]
 for j in range(len(test_images)):
-    output = pipe.cameraDistremove(test_images[j],mat,coeff,True)
+    output.append(pipe.cameraDistremove(test_images[j],mat,coeff,True))
 
 
 out = pipe.abs_sobel_thresh( output[0], orient='x', sobel_kernel=3, thresh=(50, 255))
