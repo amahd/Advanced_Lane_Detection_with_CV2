@@ -87,7 +87,7 @@ class Pipeline():
     def abs_sobel_thresh(self, image, orient='x', sobel_kernel=3, thresh=(0, 255)):
         # Calculate directional gradient
         # Apply threshold
-        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        gray = image
         if orient == 'x':
             	abs_sobel = np.absolute(cv2.Sobel(gray, cv2.CV_64F, 1, 0))
         if orient == 'y':
@@ -103,7 +103,7 @@ class Pipeline():
     def mag_thresh(self, image, sobel_kernel=3, mag_thresh=(0, 255)):
         # Calculate gradient magnitude
         # Apply threshold
-        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        gray = image
         sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
         sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
         # Calculate the gradient magnitude
@@ -121,7 +121,7 @@ class Pipeline():
     def dir_threshold(self, image, sobel_kernel=3, thresh=(0, np.pi/2)):
         # Calculate gradient direction
         # Apply threshold
-        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        gray = image
         # Calculate the x and y gradients
         sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
         sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
@@ -132,8 +132,46 @@ class Pipeline():
         dir_binary[(absgraddir >= thresh[0]) & (absgraddir <= thresh[1])] = 1
         return dir_binary
 
-
+    
+    
+    
+    def calcGradients(self,image, absx,absy,mag,abs_dir):
+        
+        
+#        gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+        gray = image[:,:,0]
+        
+        
+        
+        
+        blur = cv2.GaussianBlur(gray,(7,7),0)
+        
+        abs_x =  self.abs_sobel_thresh( blur, 'x', absx[0], absx[1])
+        abs_y =  self.abs_sobel_thresh( blur, 'y', absy[0], absy[1])
+        mag_x =  self.mag_thresh(blur, mag[0], mag[1])
+        dir_x =  self.dir_threshold(blur, abs_dir[0], abs_dir[1])
          
+        return abs_x, abs_y,mag_x,dir_x
+         
+    
+    
+    
+    def colorThr(self,image,s_thresh):
+        # Convert to HLS
+        hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
+        # Get the s channel as its most robust
+        s_channel = hls[:,:,2]
+
+
+        s_binary = np.zeros_like(s_channel)
+        s_binary[(s_channel >= s_thresh[0]) & (s_channel <= s_thresh[1])] = 1
+        
+        return s_binary
+    
+    
+    
+    
+    
         
     def collectCalibImages(self,mask):
         """
@@ -145,13 +183,13 @@ class Pipeline():
         images = []         # a place to save all camera images
         
         img_names = glob(mask)                   # Collect image names   
-         
+        
         for fn in img_names:
         
             img = cv2.imread(fn)
 #            images.append(img)
             images.append(cv2.cvtColor(img,cv2.COLOR_BGR2RGB))   # change colorspace and save in images
-        
+            
         return images
         
         
