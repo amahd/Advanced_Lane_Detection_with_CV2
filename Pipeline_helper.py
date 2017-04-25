@@ -36,7 +36,7 @@ dst = np.int32([ [d_x[0],d_y[0] ], [ d_x[1],d_y[1]],
         
 
     
-class Pipeline():
+class Pipeline_helper():
        
     def __init__(self, a,b):
         """ Initializes the pipeline """
@@ -173,7 +173,7 @@ class Pipeline():
     
     
     
-    def colorThr(self,image,s_thresh):
+    def colorThr_s(self,image,s_thresh):
         # Convert to HLS
         hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
         # Get the s channel as its most robust
@@ -184,6 +184,29 @@ class Pipeline():
         s_binary[(s_channel >= s_thresh[0]) & (s_channel <= s_thresh[1])] = 1
         
         return s_binary
+    
+    
+    def colorThr_l(self,image,l_thresh):
+        # Convert to HLS
+        hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
+        # Get the s channel as its most robust
+        l_channel = hls[:,:,1]
+
+
+        l_binary = np.zeros_like(l_channel)
+        l_binary[(l_channel >= l_thresh[0]) & (l_channel <= l_thresh[1])] = 1
+        
+        return l_binary
+    
+    def colorThr(self,image,s_thresh,l_thresh):
+        
+        
+        s_binary = self.colorThr_s(image,s_thresh)
+        l_binary = self.colorThr_s(image,l_thresh)
+        
+        sl_binary = np.zeros_like(l_binary)
+        sl_binary[ ((s_binary == 1) & (l_binary == 1)) ] = 1
+        return sl_binary
     
     
     def getBinaryImg (self, a,b,c,d,s_binary ):
@@ -205,14 +228,15 @@ class Pipeline():
         
         img_size = (imge.shape[1], imge.shape[0])
           
-        cv2.polylines(imge,np.int32([src]),True,(255,0,0), 5)       
+        img = np.copy(imge)
+        cv2.polylines(img,np.int32([src]),True,(255,0,0), 5)       
         
         M = cv2.getPerspectiveTransform(np.float32(src), np.float32(dst))
             # Warp the image using OpenCV warpPerspective()
         warped = cv2.warpPerspective( combined_binary, M, img_size)
         
 
-        return warped
+        return warped, img
     
     def fitLine(self, warped , leftx, lefty,rightx ,righty):
         
@@ -324,8 +348,31 @@ class Pipeline():
 
 
 
+class Line_Stats():
+    def __init__(self):
+        # was the line detected in the last iteration?
+        self.detected = False  
+        # x values of the last n fits of the line
+        self.recent_xfitted = [] 
+        #average x values of the fitted line over the last n iterations
+        self.bestx = None     
+        #polynomial coefficients averaged over the last n iterations
+        self.best_fit = None  
+        #polynomial coefficients for the most recent fit
+        self.current_fit = [np.array([False])]  
+        #radius of curvature of the line in some units
+        self.radius_of_curvature = []
+        #distance in meters of vehicle center from the line
+        self.line_base_pos = None 
+        #difference in fit coefficients between last and new fits
+        self.diffs = np.array([0,0,0], dtype='float') 
+        #x values for detected line pixels
+        self.allx = None  
+        #y values for detected line pixels
+        self.ally = None
 
-
+    def collectRadius(self,radius):
+        self.radius_of_curvature.append(radius)
    
     
     

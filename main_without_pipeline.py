@@ -13,13 +13,10 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 plt.close('all')
 #importing pipeline
-from Pipeline_helper import Pipeline_helper,Line_Stats
-#from Line_Stats import Line_Stats
-
+from Pipeline_helper import Pipeline_helper
 import convol as con
 
-from moviepy.editor import VideoFileClip
-from IPython.display import HTML
+
 
 calib_image_dir = "camera_cal/"
 test_image_dir = "test_images/"
@@ -33,59 +30,12 @@ margin = 100 # How much to slide left and right for searching
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
-VALX = 40
-VALY = 40
-VALM = 50
-s = 3.0
-
-absx = [5, [VALX,VALX*s]]
-absy = [5, [VALY,VALY*s]]
-mag = [5, [VALM,VALM*s]]
-abs_dir = [25, [0.9,1.1]]
-thresh_col = [170,255]
-
-line_stat = Line_Stats()
-
-def pipeline(image):
-    
-    
-    imge =  np.array(image)
-    
-    # Caluclate graients
-    a,b,c,d = pipe.calcGradients(imge, absx, absy, mag, abs_dir )
-    
-    #perform filtering using color threshold
-    s_binary = pipe.colorThr(imge,thresh_col)
-    
-    combined_binary = pipe.getBinaryImg( a,b,c,d, s_binary )
-    
-    warped,img = pipe.getWarpedImg(imge, combined_binary)    
-    
-    leftx , lefty , rightx, righty= con.find_window_centroids(warped, window_width, window_height, margin)
-
-    left_fitx, right_fitx, ploty = pipe.fitLine(warped,leftx, lefty,rightx,righty)
-    
-    
-    l,r = pipe.getRadiusCurve(np.array(left_fitx), np.array(right_fitx),ploty)
-    
-    radius = float("{0:.2f}".format((l+r)/2.0))
-    line_stat.collectRadius(radius) 
-    string = "Radius of Curvature is = "+str(radius)+" (m)"
-    
-    n_img = pipe.warpToColor(imge, warped,left_fitx, right_fitx, ploty)
-    cv2.putText(n_img,string,(300,150), font, 1,(255,255,255),2)
-    
-#    return n_img, warped, left_fitx, right_fitx, ploty,img
-    return n_img
-
-
-
 
 
 
 # Make an instance of the pipeline
 pipe = Pipeline_helper(NX,NY) 
-line_stat = Line_Stats()
+
 """ Collect all images for camera calibration"""
 
 images = pipe.collectImages(calib_image_dir)
@@ -110,44 +60,66 @@ output = []
 for j in range(len(test_images)):
     output.append(pipe.cameraDistremove(test_images[j],mat,coeff,True))
 
+VALX = 40
+VALY = 40
+VALM = 50
+s = 3.0
+
+absx = [5, [VALX,VALX*s]]
+absy = [5, [VALY,VALY*s]]
+mag = [5, [VALM,VALM*s]]
+abs_dir = [25, [0.9,1.1]]
+thresh_col_s = [170,255]
+#thresh_col_l = [200,255]
 
 
+for im in range(len(output)):
 
-#for im in range(len(output)):
-#
-#    n_img,warped, left_fitx,right_fitx,ploty,img = pipeline(output[im])
-#   
-#    f, ((ax1, ax2,ax3)) = plt.subplots(1, 3, figsize=(24, 9))
-#    f.tight_layout()
-#    ax1.imshow(img)
+    imge =  np.array(output[im])
+    
+    # Caluclate graients
+    a,b,c,d = pipe.calcGradients(imge, absx, absy, mag, abs_dir )
+    
+       #perform filtering using color threshold
+    s_binary = pipe.colorThr_s(imge,thresh_col_s)
+#    s_binary = pipe.colorThr(imge,thresh_col_s,thresh_col_l)
 #    
-#    ax1.set_title('Sobel X')
-#    ax2.imshow(warped)
-#    ax2.plot(left_fitx, ploty, color='red')
-#    ax2.plot(right_fitx, ploty, color='red')
-#
-#
-#    ax3.imshow(n_img)
-#
-#    break
-#    
+    combined_binary = pipe.getBinaryImg( a,b,c,d, s_binary )
+    
+    warped,img = pipe.getWarpedImg(imge, combined_binary)   
+    
+    leftx , lefty , rightx, righty= con.find_window_centroids(warped, window_width, window_height, margin)
+
+    left_fitx, right_fitx, ploty = pipe.fitLine(warped,leftx, lefty,rightx,righty)
+    
+    
+    l,r = pipe.getRadiusCurve(np.array(left_fitx), np.array(right_fitx),ploty)
+    
+    radius = float("{0:.2f}".format((l+r)/2.0))
+     
+    string = "Radius of Curvature is = "+str(radius)+" (m)"
+    
+    n_img = pipe.warpToColor(imge, warped,left_fitx, right_fitx, ploty)
+    cv2.putText(n_img,string,(300,150), font, 1,(255,255,255),2)
+   
+
+    
+    
+    f, ((ax1, ax2)) = plt.subplots(1, 2, figsize=(24, 9))
+    f.tight_layout()
+    ax1.imshow(combined_binary)
+    
+
+    
+    ax1.set_title('Sobel X')
+    ax2.imshow(warped)
+    plt.plot(left_fitx, ploty, color='red')
+    plt.plot(right_fitx, ploty, color='red')
 
 
-white_output = 'output.mp4'
 
-clip2 = VideoFileClip('project_video.mp4')
-yellow_clip = clip2.fl_image(pipeline)
-yellow_clip.write_videofile(white_output, audio=False)
-
-
-
-
-
-
-
-
-
-
+    
+    
     
     
 #    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(24, 9))
