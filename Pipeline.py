@@ -18,6 +18,15 @@ import matplotlib.image as mpimg
 calib_image_dir = "camera_cal/"
 test_image_dir = "test_images/"
 
+s_x = [293,1143,535,750]
+s_y = [711,711,493,493]
+    
+d_x = [313,1030,313,1030]
+
+d_y = [711,711,375,375]
+
+
+
     
 class Pipeline():
        
@@ -151,7 +160,7 @@ class Pipeline():
         mag_x =  self.mag_thresh(blur, mag[0], mag[1])
         dir_x =  self.dir_threshold(blur, abs_dir[0], abs_dir[1])
          
-        return abs_x, abs_y,mag_x,dir_x
+        return abs_x, abs_y, mag_x, dir_x
          
     
     
@@ -169,6 +178,65 @@ class Pipeline():
         return s_binary
     
     
+    def getBinaryImg (self, a,b,c,d,s_binary ):
+        
+        final = np.zeros_like(a)
+        final[((a == 1) & (b == 1)) | ((c == 1) & (d == 1))] = 1
+    
+    
+        binary = np.zeros_like(final)
+        binary[(s_binary == 1) | (final == 1)] = 1
+        
+        
+        return binary
+    
+
+           
+    def getWarpedImg(self,imge, combined_binary):
+        
+        
+        img_size = (imge.shape[1], imge.shape[0])
+        #    
+
+        
+        src = np.int32([ [s_x[0],s_y[0] ], [ s_x[1],s_y[1]], 
+                                         [s_x[3],s_y[3]], 
+                                         [s_x[2],s_y[2]]])
+        
+        #    dst = np.float32([[313,711], [993,711], 
+        #                                     [313,375], 
+        #                                     [993,375]])
+        dst = np.int32([ [d_x[0],d_y[0] ], [ d_x[1],d_y[1]], 
+                                         [d_x[3],d_y[3]], 
+                                         [d_x[2],d_y[2]]])
+        
+        
+         
+        cv2.polylines(imge,np.int32([src]),True,(255,0,0), 5)
+        #    cv2.polylines(combined_binary,np.int32([src]),True,(255,0,0), 5)
+        
+        
+        M = cv2.getPerspectiveTransform(np.float32(src), np.float32(dst))
+            # Warp the image using OpenCV warpPerspective()
+        warped = cv2.warpPerspective( combined_binary, M, img_size)
+        
+
+        return warped
+    
+    def fitLine(self, warped , leftx, lefty,rightx ,righty):
+        
+        left_fit = np.polyfit(lefty, leftx, 2)
+        right_fit = np.polyfit(righty, rightx, 2)
+        
+        ploty = np.linspace(0, warped.shape[0]-1, warped.shape[0] )
+        left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
+        right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+        
+        
+        
+        
+        
+        return left_fitx, right_fitx, ploty
     
     
     
@@ -203,8 +271,34 @@ class Pipeline():
             img_mask = source +'calibration*.jpg'     # create a mask using glob
      
         elif (source == test_image_dir):
-            img_mask = source +'*.jpg'     # create a mask using glob
+            img_mask = source +'frame*.jpg'     # create a mask using glob
             
         images = self.collectCalibImages(img_mask)
         
         return images
+    
+    
+    
+
+
+
+
+   
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

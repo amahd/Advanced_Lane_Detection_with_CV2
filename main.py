@@ -14,6 +14,7 @@ import matplotlib.image as mpimg
 plt.close('all')
 #importing pipeline
 from Pipeline import Pipeline
+import convol as con
 
 
 
@@ -22,6 +23,14 @@ test_image_dir = "test_images/"
 
 NX = 9
 NY = 6
+
+window_width = 50 
+window_height = 80 # Break image into 9 vertical layers since image height is 720
+margin = 100 # How much to slide left and right for searching
+
+
+
+
 
 # Make an instance of the pipeline
 pipe = Pipeline(NX,NY) 
@@ -59,59 +68,41 @@ absx = [5, [VALX,VALX*s]]
 absy = [5, [VALY,VALY*s]]
 mag = [5, [VALM,VALM*s]]
 abs_dir = [25, [0.9,1.1]]
+thresh_col = [170,255]
+
+
 
 for im in range(len(output)):
 
     imge =  np.array(output[im])
     
-    
+    # Caluclate graients
     a,b,c,d = pipe.calcGradients(imge, absx, absy, mag, abs_dir )
     
-    final = np.zeros_like(a)
-    final[((a == 1) & (b == 1)) | ((c == 1) & (d == 1))] = 1
-    
-    thresh_col = [170,255]
-    
+    #perform filtering using color threshold
     s_binary = pipe.colorThr(imge,thresh_col)
     
+    combined_binary = pipe.getBinaryImg( a,b,c,d, s_binary )
     
+    warped = pipe.getWarpedImg(imge, combined_binary)    
     
+    leftx , lefty , rightx, righty= con.find_window_centroids(warped, window_width, window_height, margin)
+
+    left_fitx, right_fitx,ploty = pipe.fitLine(warped,leftx, lefty,rightx,righty)
     
-    combined_binary = np.zeros_like(final)
-    combined_binary[(s_binary == 1) | (final == 1)] = 1
+
+
     
-#    img_size = (output[2].shape[1], output[2].shape[0])
-#    
-#    src_x = [213,1093,561,720]
-#    src_y = [711,711,475,475]
-#    
-#    dst_x = [213,1093,213,1093]
-#    
-#    dst_y = [711,711,475,475]
-#    
-#    
-#    src = np.float32([[213,711], [1093,711], 
-#                                     [561,475], 
-#                                     [720,475]])
-#    
-#    dst = np.float32([[213,711], [1093,711], 
-#                                     [213,475], 
-#                                     [1093,475]])
-#    
-##    
-#    M = cv2.getPerspectiveTransform(src, dst)
-#        # Warp the image using OpenCV warpPerspective()
-#    warped = cv2.warpPerspective(imge, M, img_size)
-#    
-#
-#   
-#    f, ((ax1, ax2)) = plt.subplots(1, 2, figsize=(24, 9))
-#    f.tight_layout()
-#    ax1.imshow(imge)
-#    ax1.plot(src_x,src_y,'r-')
-#    ax1.set_title('Sobel X')
-#    ax2.imshow(warped)
+
+   
+    f, ((ax1, ax2)) = plt.subplots(1, 2, figsize=(24, 9))
+    f.tight_layout()
+    ax1.imshow(imge)
     
+    ax1.set_title('Sobel X')
+    ax2.imshow(warped)
+    plt.plot(left_fitx, ploty, color='red')
+    plt.plot(right_fitx, ploty, color='red')
     
     
     
