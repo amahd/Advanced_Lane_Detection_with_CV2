@@ -15,9 +15,9 @@ import cv2
 #warped = mpimg.imre1ad('warped_example.jpg')
 #warped
 # window settings
-window_width = 50 
-window_height = 80 # Break image into 9 vertical layers since image height is 720
-margin = 100 # How much to slide left and right for searching
+#window_width = 50 
+#window_height = 80 # Break image into 9 vertical layers since image height is 720
+#margin = 100 # How much to slide left and right for searching
 
 def window_mask(width, height, img_ref, center,level):
     output = np.zeros_like(img_ref)
@@ -35,9 +35,9 @@ def find_window_centroids(warped, window_width, window_height, margin):
     # and then np.convolve the vertical image slice with the window template 
     
     # Sum quarter bottom of image to get slice, could use a different ratio
-    l_sum = np.sum(warped[int(3*warped.shape[0]/4):,:int(warped.shape[1]/2)], axis=0)
+    l_sum = np.sum(warped[int(7*warped.shape[0]/8):,:int(warped.shape[1]/2)], axis=0)
     l_center = np.argmax(np.convolve(window,l_sum)) - window_width/2
-    r_sum = np.sum(warped[int(3*warped.shape[0]/4):,int(warped.shape[1]/2):], axis=0)
+    r_sum = np.sum(warped[int(7*warped.shape[0]/8):,int(warped.shape[1]/2):], axis=0)
     r_center = np.argmax(np.convolve(window,r_sum)) - window_width/2+int(warped.shape[1]/2)
     
     l_centre_y = int((warped.shape[0] - int(3*warped.shape[0]/4))/2.0 ) + int(3*warped.shape[0]/4)
@@ -45,8 +45,17 @@ def find_window_centroids(warped, window_width, window_height, margin):
         
     # Add what we found for the first layer
     window_centroids.append((l_center,r_center))
-    window_y.append( l_centre_y)    
-    # Go through each layer looking for max pixel locations
+    window_y.append( l_centre_y)  
+    
+    return window_centroids,window_y
+    
+def find_all_centroids(warped, window_centroids, window_y, window_width, window_height, margin):   
+    window = np.ones(window_width)
+    
+    l_center = window_centroids[0][0]
+    r_center = window_centroids[0][1]
+
+# Go through each layer looking for max pixel locations
     for level in range(1,(int)(warped.shape[0]/window_height)):
         # convolve the window into the vertical slice of the image
         image_layer = np.sum(warped[int(warped.shape[0]-(level+1)*window_height):int(warped.shape[0]-level*window_height),:], axis=0)
@@ -63,6 +72,10 @@ def find_window_centroids(warped, window_width, window_height, margin):
         r_max_index = int(min(r_center+offset+margin,warped.shape[1]))
         r_center = np.argmax(conv_signal[r_min_index:r_max_index])+r_min_index-offset
         
+#        print(r_min_index)
+#        print(r_max_index)
+#        print()
+        
         	    # Add what we found for that layer
         window_centroids.append((l_center,r_center))
         
@@ -70,9 +83,9 @@ def find_window_centroids(warped, window_width, window_height, margin):
         rightx = [item[1] for item in window_centroids]
         lefty = window_y
         righty = window_y
+        
 
-
-
+    
     return leftx, lefty,rightx,righty
 
 #leftx, lefty,rightx,righty= find_window_centroids(warped, window_width, window_height, margin)
@@ -128,3 +141,4 @@ def find_window_centroids(warped, window_width, window_height, margin):
 #plt.plot(right_fitx, ploty, color='red')
 #plt.xlim(0, 1280)
 #plt.ylim(720, 0)
+

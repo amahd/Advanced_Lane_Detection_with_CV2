@@ -33,7 +33,19 @@ src = np.int32([ [s_x[0],s_y[0] ], [ s_x[1],s_y[1]],
 dst = np.int32([ [d_x[0],d_y[0] ], [ d_x[1],d_y[1]], 
                                          [d_x[3],d_y[3]], 
                                          [d_x[2],d_y[2]]])
-        
+src = np.float32([
+            [580, 460],
+            [700, 460],
+            [1040, 680],
+            [260, 680],
+        ])
+
+dst = np.float32([
+            [260, 0],
+            [1040, 0],
+            [1040, 720],
+            [260, 720],
+        ])
 
     
 class Pipeline_helper():
@@ -238,17 +250,17 @@ class Pipeline_helper():
 
         return warped, img
     
-    def fitLine(self, warped , leftx, lefty,rightx ,righty):
+    def fitCoeff(self,  leftx, lefty,rightx ,righty):
         
         left_fit = np.polyfit(lefty, leftx, 2)
         right_fit = np.polyfit(righty, rightx, 2)
-        
+        return left_fit, right_fit
+
+
+    def fitVector(self, warped ,left_fit,right_fit):
         ploty = np.linspace(0, warped.shape[0]-1, warped.shape[0] )
         left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
         right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
-        
-        
-        
         
         
         return left_fitx, right_fitx, ploty
@@ -270,7 +282,7 @@ class Pipeline_helper():
         left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
         right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
         # Now our radius of curvature is in meters
-        
+
        
                
         return left_curverad, right_curverad        
@@ -337,7 +349,7 @@ class Pipeline_helper():
         if (source == calib_image_dir):
             img_mask = source +'calibration*.jpg'     # create a mask using glob
      
-        elif (source == test_image_dir):
+        else:
             img_mask = source +'*.jpg'     # create a mask using glob
             
         images = self.collectCalibImages(img_mask)
@@ -346,9 +358,9 @@ class Pipeline_helper():
     
     
 
+import collections
 
-
-class Line_Stats():
+class Line_Stats(Pipeline_helper):
     def __init__(self):
         # was the line detected in the last iteration?
         self.detected = False  
@@ -370,11 +382,77 @@ class Line_Stats():
         self.allx = None  
         #y values for detected line pixels
         self.ally = None
-
+        
+        self.last_leftx = None
+        self.last_rightx = None
+        self.last_y = None
+        
+        self.Leftx = collections.deque(maxlen=3 * 20)
+        self.Rightx = collections.deque(maxlen=3 * 20)
     def collectRadius(self,radius):
+        """
+        Collect all radii
+        """
         self.radius_of_curvature.append(radius)
    
+    def checkLaneWidth(self, leftx, rightx,lefty):
+        """
+        Sanity check on lane wdith using convoluted centroids
+        Inputs:
+        
+        leftx: left centroid
+        rightx: right centroids
+        """
+        # fid differenc eof lane points
+        differ = np.array(rightx) - np.array(leftx)
+        
+        # basic sanity check
+        s = differ < 0
+        # if difference is negative , quit
+        if(s.any()):
+            return False
+            
+        #  maximum lane deivation of 100 pixels equals roughly 0.5 m        
+        lane_dev = 100
+        
+        lane_width = 700        # lane width in pixels
+        
+#        lane_start = rightx[0] -leftx[0]        #lane width at start
+#        lane_end = rightx[-1] -leftx[-1]        #lne width at end
+##        print(lane_start)
+#        print(lane_end)
+        # avergae lane width from centroids
+        avg_lane = np.mean(np.array(rightx) - np.array(leftx))
+#        print("Lane width minus avg lane ",avg_lane ,np.abs(lane_width - avg_lane))
+        # Check for avergae lane width
+        if (np.abs(lane_width - avg_lane) < lane_dev ):
+
+                
+                self.detected = True
+                self.last_leftx = (leftx)
+                self.last_rightx = (rightx)
+                self.last_y = lefty
+                
+                left,right = self.fitCoeff(leftx,lefty,rightx,lefty)
+                self.Leftx.append(left)                
+                self.Rightx.append(right)
+                
+                return True
+        else:
+            return False
+        
+        
+        
+        
+        
+        
+        
+        def checkRadius(self):
+            return []
+ 
     
+        
+        
     
     
     

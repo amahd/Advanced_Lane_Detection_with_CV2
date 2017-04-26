@@ -42,45 +42,100 @@ absx = [5, [VALX,VALX*s]]
 absy = [5, [VALY,VALY*s]]
 mag = [5, [VALM,VALM*s]]
 abs_dir = [25, [0.9,1.1]]
-thresh_col = [170,255]
+thresh_col_s = [100,255]
+thresh_col_l = [220,255]
 
-line_stat = Line_Stats()
+line = Line_Stats()
+indx = 0
+#def pipeline(image):
+#    
+#    
+#    imge =  np.array(image)
+#    
+#    # Caluclate graients
+#    a,b,c,d = pipe.calcGradients(imge, absx, absy, mag, abs_dir )
+#    
+#    #perform filtering using color threshold
+#    s_binary = pipe.colorThr(imge,thresh_col)
+#    
+#    combined_binary = pipe.getBinaryImg( a,b,c,d, s_binary )
+#    
+#    warped,img = pipe.getWarpedImg(imge, combined_binary)    
+#    
+#    leftx , lefty , rightx, righty= con.find_window_centroids(warped, window_width, window_height, margin)
+#
+#    left_fitx, right_fitx, ploty = pipe.fitLine(warped,leftx, lefty,rightx,righty)
+#    
+#    
+#    l,r = pipe.getRadiusCurve(np.array(left_fitx), np.array(right_fitx),ploty)
+#    
+#    radius = float("{0:.2f}".format((l+r)/2.0))
+#    line_stat.collectRadius(radius) 
+#    string = "Radius of Curvature is = "+str(radius)+" (m)"
+#    
+#    n_img = pipe.warpToColor(imge, warped,left_fitx, right_fitx, ploty)
+#    cv2.putText(n_img,string,(300,150), font, 1,(255,255,255),2)
+#    
+##    return n_img, warped, left_fitx, right_fitx, ploty,img
+#    return n_img
 
 def pipeline(image):
-    
-    
+    centre_x = []
+    centre_y = []
     imge =  np.array(image)
-    
+    global indx
     # Caluclate graients
     a,b,c,d = pipe.calcGradients(imge, absx, absy, mag, abs_dir )
     
-    #perform filtering using color threshold
-    s_binary = pipe.colorThr(imge,thresh_col)
-    
+       #perform filtering using color threshold
+    s_binary = pipe.colorThr_s(imge,thresh_col_s)
+#    s_binary = pipe.colorThr(imge,thresh_col_s,thresh_col_l)
+#    
     combined_binary = pipe.getBinaryImg( a,b,c,d, s_binary )
     
-    warped,img = pipe.getWarpedImg(imge, combined_binary)    
-    
-    leftx , lefty , rightx, righty= con.find_window_centroids(warped, window_width, window_height, margin)
+    warped,img = pipe.getWarpedImg(imge, combined_binary)   
 
-    left_fitx, right_fitx, ploty = pipe.fitLine(warped,leftx, lefty,rightx,righty)
+    centre_x, centre_y = con.find_window_centroids(warped, window_width, window_height, margin)
     
+    leftx , lefty , rightx, righty = con.find_all_centroids(warped, centre_x, centre_y,
+                                                            window_width, window_height, margin)
     
+#    if (line.checkLaneWidth(leftx,rightx,righty)):   # Check on lane width
+    
+       
+    val = line.checkLaneWidth(leftx,rightx,righty)    
+        
+#    elif (line.last_leftx is not None):
+#            left_p, right_p = pipe.fitCoeff(warped,line.last_leftx, line.last_lefty,rightx,righty)
+#            left_fitx, right_fitx, ploty = pipe.fitVector(warped,left_p,right_p)
+
+
+
+    if (len(line.Leftx) == line.Leftx.maxlen):
+#        left_p, right_p = pipe.fitCoeff(warped,leftx, lefty,rightx,righty)
+        cum_left = np.array(line.Leftx)
+        cum_right = np.array(line.Rightx)
+        left_p = np.median(cum_left,axis = 0)
+        right_p = np.median(cum_right,axis = 0)
+        
+    else:
+        left_p, right_p = pipe.fitCoeff(leftx, lefty,rightx,righty)
+        
+    left_fitx, right_fitx, ploty = pipe.fitVector(warped,left_p,right_p)
     l,r = pipe.getRadiusCurve(np.array(left_fitx), np.array(right_fitx),ploty)
     
     radius = float("{0:.2f}".format((l+r)/2.0))
-    line_stat.collectRadius(radius) 
+#    print(radius) 
+
+#    print()
     string = "Radius of Curvature is = "+str(radius)+" (m)"
     
     n_img = pipe.warpToColor(imge, warped,left_fitx, right_fitx, ploty)
-    cv2.putText(n_img,string,(300,150), font, 1,(255,255,255),2)
-    
-#    return n_img, warped, left_fitx, right_fitx, ploty,img
+    if (indx//10):
+        cv2.putText(n_img,string,(300,150), font, 1,(255,255,255),2)
+    indx += 1
+
     return n_img
-
-
-
-
 
 
 # Make an instance of the pipeline
@@ -135,7 +190,7 @@ for j in range(len(test_images)):
 
 white_output = 'output.mp4'
 
-clip2 = VideoFileClip('project_video.mp4')
+clip2 = VideoFileClip('project_video.mp4')#.subclip(0,85)
 yellow_clip = clip2.fl_image(pipeline)
 yellow_clip.write_videofile(white_output, audio=False)
 

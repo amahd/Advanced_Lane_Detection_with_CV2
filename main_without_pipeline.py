@@ -13,18 +13,18 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 plt.close('all')
 #importing pipeline
-from Pipeline_helper import Pipeline_helper
+from Pipeline_helper import Pipeline_helper, Line_Stats
 import convol as con
 
 
 
 calib_image_dir = "camera_cal/"
-test_image_dir = "test_images/"
+test_image_dir = "test/"
 
 NX = 9
 NY = 6
 
-window_width = 50 
+window_width = 100 
 window_height = 80 # Break image into 9 vertical layers since image height is 720
 margin = 100 # How much to slide left and right for searching
 
@@ -34,7 +34,8 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 
 
 # Make an instance of the pipeline
-pipe = Pipeline_helper(NX,NY) 
+pipe = Pipeline_helper(NX,NY)
+line = Line_Stats()
 
 """ Collect all images for camera calibration"""
 
@@ -69,12 +70,14 @@ absx = [5, [VALX,VALX*s]]
 absy = [5, [VALY,VALY*s]]
 mag = [5, [VALM,VALM*s]]
 abs_dir = [25, [0.9,1.1]]
-thresh_col_s = [170,255]
-#thresh_col_l = [200,255]
+thresh_col_s = [150,255]
+thresh_col_l = [220,255]
 
+indx = 0
 
 for im in range(len(output)):
-
+    centre_x = []
+    centre_y = []
     imge =  np.array(output[im])
     
     # Caluclate graients
@@ -87,36 +90,81 @@ for im in range(len(output)):
     combined_binary = pipe.getBinaryImg( a,b,c,d, s_binary )
     
     warped,img = pipe.getWarpedImg(imge, combined_binary)   
-    
-    leftx , lefty , rightx, righty= con.find_window_centroids(warped, window_width, window_height, margin)
 
-    left_fitx, right_fitx, ploty = pipe.fitLine(warped,leftx, lefty,rightx,righty)
+    centre_x, centre_y = con.find_window_centroids(warped, window_width, window_height, margin)
     
+    leftx , lefty , rightx, righty = con.find_all_centroids(warped, centre_x, centre_y,
+                                                            window_width, window_height, margin)
     
+#    if (line.checkLaneWidth(leftx,rightx,righty)):   # Check on lane width
+    
+ 
+    val = line.checkLaneWidth(leftx,rightx,righty)    
+        
+#    elif (line.last_leftx is not None):
+#            left_p, right_p = pipe.fitCoeff(warped,line.last_leftx, line.last_lefty,rightx,righty)
+#            left_fitx, right_fitx, ploty = pipe.fitVector(warped,left_p,right_p)
+
+
+
+    if (len(line.Leftx) == line.Leftx.maxlen):
+#        left_p, right_p = pipe.fitCoeff(warped,leftx, lefty,rightx,righty)
+        cum_left = np.array(line.Leftx)
+        cum_right = np.array(line.Rightx)
+        left_p = np.mean(cum_left,axis = 0)
+        right_p = np.mean(cum_right,axis = 0)
+        print("  Here " )
+    else:
+        left_p, right_p = pipe.fitCoeff(leftx, lefty,rightx,righty)
+        
+    left_fitx, right_fitx, ploty = pipe.fitVector(warped,left_p,right_p)
     l,r = pipe.getRadiusCurve(np.array(left_fitx), np.array(right_fitx),ploty)
     
+    camera_position = imge.shape[1]/2
+    print(camera_position)
+    lane_center = (left_fitx[719] + right_fitx[719])/2
+    print(lane_center)
+    center_offset_pixels = abs(camera_position - lane_center)
+    print(center_offset_pixels)
+    
+    
+    
+    
+    
+    
+    
+    
     radius = float("{0:.2f}".format((l+r)/2.0))
-     
+    print(radius,val) 
+
+    print()
     string = "Radius of Curvature is = "+str(radius)+" (m)"
     
     n_img = pipe.warpToColor(imge, warped,left_fitx, right_fitx, ploty)
-    cv2.putText(n_img,string,(300,150), font, 1,(255,255,255),2)
+    if (indx//10):
+        cv2.putText(n_img,string,(300,150), font, 1,(255,255,255),2)
    
-
+    indx += 1
     
     
-    f, ((ax1, ax2)) = plt.subplots(1, 2, figsize=(24, 9))
+    
+    
+    
+    f, ((ax1, ax2)) = plt.subplots(1, 2, figsize=(8, 4))
     f.tight_layout()
-    ax1.imshow(combined_binary)
+    ax1.imshow(combined_binary,cmap='gray')
     
 
     
     ax1.set_title('Sobel X')
-    ax2.imshow(warped)
+    ax2.imshow(warped,cmap='gray')
     plt.plot(left_fitx, ploty, color='red')
     plt.plot(right_fitx, ploty, color='red')
+    plt.plot(rightx,righty,'.')
+    plt.plot(leftx,righty,'.')
 
 
+    break
 
     
     
