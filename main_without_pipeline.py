@@ -163,7 +163,7 @@ for im in range(len(output)):
     ax4.set_title('Direction Threshold',fontsize=15)
     ax3.imshow(c,cmap='gray')
     ax4.imshow(d,cmap='gray')
-    plt.savefig('result_images/binary'+str(im)+'.jpg')
+
     
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(24, 9))
     f.tight_layout()
@@ -175,7 +175,7 @@ for im in range(len(output)):
     ax3.imshow(s_binary,cmap='gray')
     ax4.set_title('Final')
     ax4.imshow(combined_binary,cmap='gray')
-    plt.savefig('result_images/Final'+str(im)+'.jpg')    
+    
     
 
     
