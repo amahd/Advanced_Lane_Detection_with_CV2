@@ -48,7 +48,7 @@ absy = [5, [VALY,VALY*s]]   # Sobel size and thresholds for y axis derivative
 mag = [5, [VALM,VALM*s]]    # Sobel size and thresholds for magnitude thresh detection
 abs_dir = [25, [0.9,1.1]]   # Sobel size and thresholds for directional detection
 
-thresh_col_s = [100,255]    # Color threshold for s channel
+thresh_col_s = [170,255]    # Color threshold for s channel
 
 """ global variables to store image count and radius values """
 indx = 0
@@ -168,7 +168,7 @@ else:
 # output video name
 white_output = 'output.mp4'
 # read test video
-clip2 = VideoFileClip('project_video.mp4').subclip(0,0.5)
+clip2 = VideoFileClip('project_video.mp4')#.subclip(0,0.5)
 
 # Read images into pipeline
 yellow_clip = clip2.fl_image(pipeline)
