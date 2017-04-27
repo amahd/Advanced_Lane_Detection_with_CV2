@@ -54,7 +54,7 @@ thresh_col_s = [100,255]    # Color threshold for s channel
 indx = 0
 radius = [0,0]
 
-
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 def pipeline(image):
     """
     Main pipeline for handling video images
@@ -91,8 +91,7 @@ def pipeline(image):
     # get all points for left and right lane
     leftx , lefty , rightx, righty = con.find_all_centroids(warped, centre_x, centre_y,
                                                             window_width, window_height, margin)
-    
-    
+
     # Sanity check if the convolved points are reasonable, returns True/False 
     val = line.checkLaneWidth(leftx,lefty,rightx,righty)    
         
@@ -142,10 +141,7 @@ def pipeline(image):
     indx += 1
     radius[0] = radius[1]
     return n_img
-
-
-
-
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 
 # Make an instance of the pipeline
@@ -155,7 +151,6 @@ line = Line_Sanity()
 """ Collect all images for camera calibration"""
 
 images = pipe.collectImages(calib_image_dir)
-test_images = pipe.collectImages(test_image_dir)
 
 import os
 if os.path.exists("Coeff.npy"):
@@ -169,16 +164,16 @@ else:
     np.save('Mat.npy',mat)
 
 
-# remove distortion on test images
-output = []
-for j in range(len(test_images)):
-    output.append(pipe.cameraDistremove(test_images[j],mat,coeff,True))
 
-
+# output video name
 white_output = 'output.mp4'
+# read test video
+clip2 = VideoFileClip('project_video.mp4').subclip(0,0.5)
 
-clip2 = VideoFileClip('project_video.mp4')#.subclip(0,2)
+# Read images into pipeline
 yellow_clip = clip2.fl_image(pipeline)
+
+#write to output video file   
 yellow_clip.write_videofile(white_output, audio=False)
 
 
