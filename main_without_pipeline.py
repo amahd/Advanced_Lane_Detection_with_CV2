@@ -16,9 +16,17 @@ plt.close('all')
 from Pipeline_helper import Pipeline_helper, Line_Sanity,fitCoeff
 import convol as con
 
+s_x = [580,700,1040,260]
 
+s_y = [460,460,680,680]
+    
+d_x = [260,1040,1040,260]
 
+d_y = [0,0,720,720]
 
+src = np.int32([ [s_x[0],s_y[0] ], [ s_x[1],s_y[1]], 
+                                         [s_x[2],s_y[2]], 
+                                         [s_x[3],s_y[3]]])
 """ Directories for calibration and test images """
 
 calib_image_dir = "camera_cal/"     #directory where clibration images are places
@@ -148,11 +156,11 @@ for im in range(len(output)):
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(24, 9))
     f.tight_layout()
     ax1.imshow(a,cmap='gray')
-    ax1.set_title('Sobel X')
+    ax1.set_title('Sobel X',fontsize=15)
     ax2.imshow(b,cmap='gray')
-    ax2.set_title('Sobel Y')
-    ax3.set_title('Mag threshold')
-    ax4.set_title('Direction Threshold')
+    ax2.set_title('Sobel Y',fontsize=15)
+    ax3.set_title('Mag threshold',fontsize=15)
+    ax4.set_title('Direction Threshold',fontsize=15)
     ax3.imshow(c,cmap='gray')
     ax4.imshow(d,cmap='gray')
     plt.savefig('result_images/binary'+str(im)+'.jpg')
@@ -177,6 +185,7 @@ for im in range(len(output)):
     f.tight_layout()
     ax1.imshow(combined_binary,cmap='gray')
     ax1.set_title('Final Binary Image')
+    ax1.plot(s_x,s_y,)
     
     ax2.set_title('Warped image, with lines, and conv. dots')
     ax2.plot(left_fitx, ploty, color='red')
@@ -188,7 +197,10 @@ for im in range(len(output)):
     ax3.set_title('Final image')
     ax3.imshow(n_img)
 
-    
+
+#    plt.figure()
+#    cv2.polylines(temp,np.int32([src]),True,(255,0,0), 5)    
+#    plt.imshow(temp)
     
     break
 

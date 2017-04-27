@@ -29,13 +29,13 @@ d_x = [260,1040,1040,260]
 d_y = [0,0,720,720]
 
 src = np.int32([ [s_x[0],s_y[0] ], [ s_x[1],s_y[1]], 
-                                         [s_x[3],s_y[3]], 
-                                         [s_x[2],s_y[2]]])
+                                         [s_x[2],s_y[2]], 
+                                         [s_x[3],s_y[3]]])
         
 
 dst = np.int32([ [d_x[0],d_y[0] ], [ d_x[1],d_y[1]], 
-                                         [d_x[3],d_y[3]], 
-                                         [d_x[2],d_y[2]]])
+                                         [d_x[2],d_y[2]], 
+                                         [d_x[3],d_y[3]]])
 
 class Pipeline_helper():
        
@@ -333,6 +333,8 @@ class Pipeline_helper():
         img_size = (imge.shape[1], imge.shape[0])
           
         img = np.copy(imge)
+        
+        #Plot points on the images to warp
         cv2.polylines(img,np.int32([src]),True,(255,0,0), 5)       
         
         #Perform prespective transform using src and dst points defined at the top of page
