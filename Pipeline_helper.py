@@ -387,15 +387,15 @@ class Line_Stats(Pipeline_helper):
         self.last_rightx = None
         self.last_y = None
         
-        self.Leftx = collections.deque(maxlen=3 * 20)
-        self.Rightx = collections.deque(maxlen=3 * 20)
+        self.Leftx = collections.deque(maxlen=3 * 10)
+        self.Rightx = collections.deque(maxlen=3 * 10)
     def collectRadius(self,radius):
         """
         Collect all radii
         """
         self.radius_of_curvature.append(radius)
    
-    def checkLaneWidth(self, leftx, rightx,lefty):
+    def checkLaneWidth(self, leftx, lefty,rightx,righty):
         """
         Sanity check on lane wdith using convoluted centroids
         Inputs:
@@ -417,6 +417,25 @@ class Line_Stats(Pipeline_helper):
         
         lane_width = 700        # lane width in pixels
         
+        s = np.array(leftx) < 0
+        if(s.any()):
+            return False
+        
+        s = np.array(leftx) >=  640 
+        if(s.any()):
+            return False       
+        
+        s = np.array(rightx) <=  640 
+        if(s.any()):
+            return False       
+        
+        
+#        
+#        del leftx[-1] 
+#        del lefty[-1] 
+#        del rightx[-1] 
+#        del righty[-1] 
+        
 #        lane_start = rightx[0] -leftx[0]        #lane width at start
 #        lane_end = rightx[-1] -leftx[-1]        #lne width at end
 ##        print(lane_start)
@@ -433,7 +452,7 @@ class Line_Stats(Pipeline_helper):
                 self.last_rightx = (rightx)
                 self.last_y = lefty
                 
-                left,right = self.fitCoeff(leftx,lefty,rightx,lefty)
+                left,right = self.fitCoeff(leftx,lefty,rightx,righty)
                 self.Leftx.append(left)                
                 self.Rightx.append(right)
                 

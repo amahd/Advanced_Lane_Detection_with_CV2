@@ -16,6 +16,23 @@ plt.close('all')
 from Pipeline_helper import Pipeline_helper, Line_Stats
 import convol as con
 
+def hsvfil(frame):
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    
+    # define range of blue color in HSV
+    lower_yellow  = np.array([ 0, 80, 200])
+    upper_yellow = np.array([ 40, 255, 255])
+    
+    # Threshold the HSV image to get only blue colors
+    mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+    
+    # Bitwise-AND mask and original image
+    res = cv2.bitwise_and(frame,frame, mask= mask)
+
+    return res
+
+
+
 
 
 calib_image_dir = "camera_cal/"
@@ -26,7 +43,7 @@ NY = 6
 
 window_width = 100 
 window_height = 80 # Break image into 9 vertical layers since image height is 720
-margin = 100 # How much to slide left and right for searching
+margin = 150 # How much to slide left and right for searching
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -99,23 +116,23 @@ for im in range(len(output)):
 #    if (line.checkLaneWidth(leftx,rightx,righty)):   # Check on lane width
     
  
-    val = line.checkLaneWidth(leftx,rightx,righty)    
+    val = line.checkLaneWidth(leftx, lefty,rightx,righty)    
         
-#    elif (line.last_leftx is not None):
-#            left_p, right_p = pipe.fitCoeff(warped,line.last_leftx, line.last_lefty,rightx,righty)
-#            left_fitx, right_fitx, ploty = pipe.fitVector(warped,left_p,right_p)
-
-
-
     if (len(line.Leftx) == line.Leftx.maxlen):
 #        left_p, right_p = pipe.fitCoeff(warped,leftx, lefty,rightx,righty)
         cum_left = np.array(line.Leftx)
         cum_right = np.array(line.Rightx)
         left_p = np.mean(cum_left,axis = 0)
         right_p = np.mean(cum_right,axis = 0)
-        print("  Here " )
-    else:
+       
+    elif (val):
         left_p, right_p = pipe.fitCoeff(leftx, lefty,rightx,righty)
+    elif (line.last_leftx is not None):
+        left_p, right_p = pipe.fitCoeff(line.last_leftx, line.last_y,line.last_rightx, line.last_y)
+    else:
+        continue
+        
+        
         
     left_fitx, right_fitx, ploty = pipe.fitVector(warped,left_p,right_p)
     l,r = pipe.getRadiusCurve(np.array(left_fitx), np.array(right_fitx),ploty)
@@ -124,26 +141,19 @@ for im in range(len(output)):
     print(camera_position)
     lane_center = (left_fitx[719] + right_fitx[719])/2
     print(lane_center)
-    center_offset_pixels = abs(camera_position - lane_center)
-    print(center_offset_pixels)
-    
-    
-    
-    
-    
-    
-    
-    
+    center_offset_pixels = abs(camera_position - lane_center)* 3.7/700
+    print(center_offset_pixels )
+        
     radius = float("{0:.2f}".format((l+r)/2.0))
     print(radius,val) 
 
     print()
-    string = "Radius of Curvature is = "+str(radius)+" (m)"
-    
+    string1 = "Radius of Curvature is = "+str(radius)+" (m)"
+    string2 = "Camera off centre by = "+str(center_offset_pixel)+" (m)"
     n_img = pipe.warpToColor(imge, warped,left_fitx, right_fitx, ploty)
     if (indx//10):
         cv2.putText(n_img,string,(300,150), font, 1,(255,255,255),2)
-   
+        cv2.putText(n_img,string,(300,150), font, 1,(255,255,255),2)
     indx += 1
     
     
@@ -164,7 +174,7 @@ for im in range(len(output)):
     plt.plot(leftx,righty,'.')
 
 
-    break
+    
 
     
     

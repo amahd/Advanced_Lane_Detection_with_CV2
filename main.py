@@ -19,7 +19,7 @@ from Pipeline_helper import Pipeline_helper,Line_Stats
 import convol as con
 
 from moviepy.editor import VideoFileClip
-from IPython.display import HTML
+
 
 calib_image_dir = "camera_cal/"
 test_image_dir = "test_images/"
@@ -47,6 +47,8 @@ thresh_col_l = [220,255]
 
 line = Line_Stats()
 indx = 0
+
+radius = [0,0]
 #def pipeline(image):
 #    
 #    
@@ -84,10 +86,11 @@ def pipeline(image):
     centre_y = []
     imge =  np.array(image)
     global indx
+    
     # Caluclate graients
     a,b,c,d = pipe.calcGradients(imge, absx, absy, mag, abs_dir )
     
-       #perform filtering using color threshold
+    #perform filtering using color threshold
     s_binary = pipe.colorThr_s(imge,thresh_col_s)
 #    s_binary = pipe.colorThr(imge,thresh_col_s,thresh_col_l)
 #    
@@ -103,38 +106,43 @@ def pipeline(image):
 #    if (line.checkLaneWidth(leftx,rightx,righty)):   # Check on lane width
     
        
-    val = line.checkLaneWidth(leftx,rightx,righty)    
+    val = line.checkLaneWidth(leftx,lefty,rightx,righty)    
         
-#    elif (line.last_leftx is not None):
-#            left_p, right_p = pipe.fitCoeff(warped,line.last_leftx, line.last_lefty,rightx,righty)
-#            left_fitx, right_fitx, ploty = pipe.fitVector(warped,left_p,right_p)
-
-
 
     if (len(line.Leftx) == line.Leftx.maxlen):
-#        left_p, right_p = pipe.fitCoeff(warped,leftx, lefty,rightx,righty)
-        cum_left = np.array(line.Leftx)
-        cum_right = np.array(line.Rightx)
-        left_p = np.median(cum_left,axis = 0)
-        right_p = np.median(cum_right,axis = 0)
-        
-    else:
+#        cum_left = np.array(line.Leftx)
+#        cum_right = np.array(line.Rightx)
+        left_p = np.mean(np.array(line.Leftx),axis = 0)
+        right_p = np.mean(np.array(line.Rightx),axis = 0)
+       
+    elif (val):
         left_p, right_p = pipe.fitCoeff(leftx, lefty,rightx,righty)
+    elif (line.last_leftx is not None):
+        left_p, right_p = pipe.fitCoeff(line.last_leftx, line.last_y,line.last_rightx, line.last_y)
+    else:
+        return imge
         
     left_fitx, right_fitx, ploty = pipe.fitVector(warped,left_p,right_p)
     l,r = pipe.getRadiusCurve(np.array(left_fitx), np.array(right_fitx),ploty)
     
-    radius = float("{0:.2f}".format((l+r)/2.0))
-#    print(radius) 
+    camera_position = imge.shape[1]/2
+    lane_center = (left_fitx[-1] + right_fitx[-1])/2
+    center_offset_pixels = abs(camera_position - lane_center)
+    center_offset_m = float("{0:.2f}".format((center_offset_pixels)* 3.7/700))
+        
+    radius[1] = float("{0:.2f}".format((l+r)/2.0))
+ 
 
-#    print()
-    string = "Radius of Curvature is = "+str(radius)+" (m)"
-    
+    if (radius[1] > 3000):
+        radius[1] = radius[0]
+    string1 = "Radius of Curvature is = "+str(radius[1])+" (m)"
+    string2 = "Camera off centre by = "+str(center_offset_m)+" (m)"
     n_img = pipe.warpToColor(imge, warped,left_fitx, right_fitx, ploty)
-    if (indx//10):
-        cv2.putText(n_img,string,(300,150), font, 1,(255,255,255),2)
+    if (indx//10  ):
+        cv2.putText(n_img,string1,(300,150), font, 1,(255,255,255),2)
+        cv2.putText(n_img,string2,(300,250), font, 1,(255,255,255),2)
     indx += 1
-
+    radius[0] = radius[1]
     return n_img
 
 
@@ -190,7 +198,7 @@ for j in range(len(test_images)):
 
 white_output = 'output.mp4'
 
-clip2 = VideoFileClip('project_video.mp4')#.subclip(0,85)
+clip2 = VideoFileClip('project_video.mp4')#.subclip(0,10)
 yellow_clip = clip2.fl_image(pipeline)
 yellow_clip.write_videofile(white_output, audio=False)
 
