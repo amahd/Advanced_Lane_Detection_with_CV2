@@ -125,10 +125,8 @@ def pipeline(image):
     left_fitx, right_fitx, ploty = pipe.fitVector(warped,left_p,right_p)
     l,r = pipe.getRadiusCurve(np.array(left_fitx), np.array(right_fitx),ploty)
     
-    camera_position = imge.shape[1]/2
-    lane_center = (left_fitx[-1] + right_fitx[-1])/2
-    center_offset_pixels = abs(camera_position - lane_center)
-    center_offset_m = float("{0:.2f}".format((center_offset_pixels)* 3.7/700))
+    center_offset_m = pipe.getCameraOffset(imge,left_fitx, right_fitx)
+    
         
     radius[1] = float("{0:.2f}".format((l+r)/2.0))
  

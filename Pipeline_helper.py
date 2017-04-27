@@ -317,8 +317,18 @@ class Pipeline_helper():
         
 #        return (cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
         return result
-        
     
+    
+    
+    
+    def getCameraOffset(self, img,left_fit,right_fit):
+    
+        camera_position = img.shape[1]/2
+        lane_centre = (left_fit[-1] + right_fit[-1])/2
+        centre_offset_pixels = abs(camera_position - lane_centre)
+        centre_offset_m = float("{0:.2f}".format((centre_offset_pixels)* 3.7/700)))    
+    
+    return center_offset_m
         
     def collectCalibImages(self,mask):
         """
